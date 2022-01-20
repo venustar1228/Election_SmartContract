@@ -1,0 +1,50 @@
+pragma solidity 0.8.11;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+interface IeToken is IERC20{
+    function holders() external view returns(uint);
+}
+
+contract Election is Ownable{
+
+    address public governor;
+    address public newGovernor;
+    IeToken public eToken;
+
+    mapping(address => uint) public candidateInfo;
+    mapping(address => bool) public isVoted;
+
+    event Vote(address voter, address candidate);
+    event New_Governor(address newGovernor);
+    event Elect_Governor(address governor);
+
+    constructor(address _eToken) {
+        eToken = IeToken(_eToken);
+    }
+
+    modifier onlyVoter() {
+        require(eToken.balanceOf(msg.sender) > 0, "Only EToken holders can be voters");
+        require(isVoted[msg.sender] == false, "You can vote only once");
+        _;
+    }
+
+    function vote(address candidate) external onlyVoter {
+        candidateInfo[candidate] += 1;
+        isVoted[msg.sender] = true;
+        emit Vote(msg.sender, candidate);
+        if( candidateInfo[candidate] > eToken.holders() / 2) {
+            newGovernor = candidate;
+            emit New_Governor(candidate);
+        }
+    }
+
+    function elect() external onlyOwner {
+        require(newGovernor != address(0), "New Governor is now selected");
+        governor = newGovernor;
+        newGovernor = address(0);
+        emit Elect_Governor(newGovernor);
+    }
+    
+}

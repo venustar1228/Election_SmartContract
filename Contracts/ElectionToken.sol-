@@ -1,0 +1,31 @@
+pragma solidity 0.8.11;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract EToken is ERC20 {
+
+    uint public holders;
+
+    uint8 _decimals;
+
+    constructor(string memory name, string memory symbol, uint8 decimals_, uint initialSupply) ERC20(name, symbol) {
+        _decimals = decimals_;
+        _mint(msg.sender, initialSupply);
+    }
+
+    function decimals() public view override returns(uint8){
+        return _decimals;
+    }
+
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
+        if(from != address(0) && balanceOf(from) == 0)
+            holders -= 1;
+        if(balanceOf(to) == amount)
+            holders += 1;
+    }
+
+}
